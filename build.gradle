@@ -1,0 +1,48 @@
+
+plugins {
+  id 'java-library'
+  id 'eclipse'
+}
+
+version = projectVersion
+
+repositories {
+   mavenCentral()
+}
+
+dependencies {
+  implementation 'org.apache.kafka:kafka-clients:2.7.0'
+  implementation 'org.apache.kafka:connect-api:2.7.0'
+  implementation 'org.apache.kafka:connect-transforms:2.7.0'
+  implementation 'log4j:log4j:1.2.17'
+  implementation 'org.slf4j:slf4j-log4j12:1.7.25'
+  testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.4.2')
+  testImplementation('org.junit.jupiter:junit-jupiter-api:5.4.2')
+}
+
+compileJava {
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        exceptionFormat = 'full'
+    }
+}
+
+eclipse.project {
+  natures 'org.springsource.ide.eclipse.gradle.core.nature'
+}
+
+jar {
+    manifest {
+        attributes(
+            'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+            'Build-Version' : "${version}",
+            'Created-By'     : "Gradle ${gradle.gradleVersion}",
+            'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})"
+        )
+    }
+}
