@@ -35,7 +35,7 @@ The intention of this transformer is to add filtering capabilities similar to th
 | Name        | Description                                                                                                                                                                | Default Value |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `headerKey` | Name of the header key. If such a header key exists in the Kafka record, the whole message will be discarded unless `isNegate` is set to `true` to reverse this condition. |               |
-| `isNegate`  | Set to `true` to negate filtering of messages with specifed. `headerkey`                                                                                                   | `false`       |
+| `isNegate`  | Set to `true` to negate filtering of messages with specified `headerKey`.                                                                                                  | `false`       |
 
 ## Example transformation
 
