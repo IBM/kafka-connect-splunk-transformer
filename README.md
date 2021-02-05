@@ -1,4 +1,4 @@
-# Splunk-transformer
+# Kafka Connect Splunk Transformer
 
 This repository contains two transformations which can be of help when dealing with the transfer of `JSON` records into Splunk.
 
