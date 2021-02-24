@@ -26,10 +26,11 @@ import org.junit.jupiter.api.Test;
 
 public class FilterTest {
 
+	private Transformation<SinkRecord> transformation;
+
 	@Nested
-	@DisplayName("Configuration")
+	@DisplayName("FilterTest - Configuration")
 	class Configuration {
-		private Transformation<SinkRecord> transformation;
 
 		@Test
 		@DisplayName("Should throw an exception if headerKey configuration is null")
@@ -52,25 +53,22 @@ public class FilterTest {
 		}
 
 		private void shouldThrow(Map<String, ?> props) {
-			this.transformation = new Filter<>();
+			transformation = new Filter<>();
 
 			assertThrows(RuntimeException.class, () -> {
-				this.transformation.configure(props);
+				transformation.configure(props);
 			});
-
 		}
 	}
 
 	@Nested
-	@DisplayName("Messages")
+	@DisplayName("FilterTest - Messages")
 	class Messages {
-
-		private Transformation<SinkRecord> transformation;
 
 		@Test
 		@DisplayName("Should return null if the header key is found and negate is false")
 		public void message_returnNullMessage() {
-			this.transformation = new Filter<>();
+			transformation = new Filter<>();
 
 			final String HEADER_KEY = "testHeaderKey";
 			Map<String, String> props = new HashMap<>();
@@ -82,8 +80,8 @@ public class FilterTest {
 
 			final SinkRecord record = newRecord(mapValue, headers);
 
-			this.transformation.configure(props);
-			SinkRecord result = this.transformation.apply(record);
+			transformation.configure(props);
+			SinkRecord result = transformation.apply(record);
 
 			assertNull(result);
 		}
@@ -91,7 +89,7 @@ public class FilterTest {
 		@Test
 		@DisplayName("Should return null if the header key is not found but negate is true")
 		public void message_returnNullMessage_negate() {
-			this.transformation = new Filter<>();
+			transformation = new Filter<>();
 
 			final String HEADER_KEY = "testHeaderKey";
 			Map<String, Object> props = new HashMap<>();
@@ -104,8 +102,8 @@ public class FilterTest {
 
 			final SinkRecord record = newRecord(mapValue, headers);
 
-			this.transformation.configure(props);
-			SinkRecord result = this.transformation.apply(record);
+			transformation.configure(props);
+			SinkRecord result = transformation.apply(record);
 
 			assertNull(result);
 		}
@@ -113,7 +111,7 @@ public class FilterTest {
 		@Test
 		@DisplayName("Should return a record if the header key is not found and negate is false")
 		public void message_returnMessage() {
-			this.transformation = new Filter<>();
+			transformation = new Filter<>();
 
 			final String HEADER_KEY = "testHeaderKey";
 			Map<String, Object> props = new HashMap<>();
@@ -125,8 +123,8 @@ public class FilterTest {
 
 			final SinkRecord record = newRecord(mapValue, headers);
 
-			this.transformation.configure(props);
-			SinkRecord result = this.transformation.apply(record);
+			transformation.configure(props);
+			SinkRecord result = transformation.apply(record);
 
 			assertNotNull(result);
 		}
@@ -134,7 +132,7 @@ public class FilterTest {
 		@Test
 		@DisplayName("Should return a record if the header key is found and negate is true")
 		public void message_returnMessage_negate() {
-			this.transformation = new Filter<>();
+			transformation = new Filter<>();
 
 			final String HEADER_KEY = "testHeaderKey";
 			Map<String, Object> props = new HashMap<>();
@@ -147,12 +145,11 @@ public class FilterTest {
 
 			final SinkRecord record = newRecord(mapValue, headers);
 
-			this.transformation.configure(props);
-			SinkRecord result = this.transformation.apply(record);
+			transformation.configure(props);
+			SinkRecord result = transformation.apply(record);
 
 			assertNotNull(result);
 		}
-
 	}
 
 	private SinkRecord newRecord(Map<String, Object> value, Iterable<Header> headers) {
