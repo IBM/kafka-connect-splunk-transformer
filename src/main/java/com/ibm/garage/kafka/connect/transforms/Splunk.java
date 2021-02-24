@@ -25,6 +25,9 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 
 	private static final Logger log = LoggerFactory.getLogger(Splunk.class);
 
+	private static final String JSON_KEY_DELIMITER_REGEX = "\\.";
+	private static final String JSON_KEY_DELIMITER = ".";
+
 	public static final String OVERVIEW_DOC = "Transformation of JSON messages to Splunk format";
 
 	public static final String SOURCE_KEY_CONFIG = "sourceKey";
@@ -71,6 +74,8 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 	private String regexDefaultValue;
 	private Boolean preserveKeyInBody;
 
+	private Boolean isSourceKeyNested;
+
 	@Override
 	public void configure(Map<String, ?> props) {
 		log.info("Getting configuration for " + Splunk.class.getName() + " transformation...");
@@ -81,6 +86,7 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 		if (this.sourceKey == null || this.sourceKey.isEmpty()) {
 			throw new RuntimeException("\"" + SOURCE_KEY_CONFIG + "\" configuration cannot be neither null nor empty");
 		}
+		this.isSourceKeyNested = isNested(this.sourceKey);
 
 		this.destKey = config.getString(DESTINATION_KEY_CONFIG);
 		this.isMetadata = config.getBoolean(IS_METADATA_KEY_CONFIG);
@@ -115,56 +121,69 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 	@Override
 	public R apply(R record) {
 		log.debug("Processing a record...");
-		final Map<String, Object> valueMap = requireMapOrNull(record.value(), PURPOSE);
+		final Map<String, Object> rootValueMap = requireMapOrNull(record.value(), PURPOSE);
 
-		if (valueMap != null && !valueMap.isEmpty()) {
-			String expectedKey = this.sourceKey;
+		if (rootValueMap != null && !rootValueMap.isEmpty()) {
+			Map<String, Object> ctxValueMap = rootValueMap;
+			String ctxKey = this.sourceKey;
 
-			if (valueMap.containsKey(this.sourceKey)) {
-				String value = String.valueOf(valueMap.get(expectedKey));
+			if (this.isSourceKeyNested) {
+				ctxKey = getLastNestedKey(this.sourceKey);
+				ctxValueMap = getNestedValueMap(this.sourceKey, rootValueMap);
 
-				if (this.regexPattern != null) {
-					if (value.matches(this.regexPattern)) {
-						value = value.replaceAll(this.regexPattern, this.regexFormat);
-					} else if (this.regexDefaultValue != null) {
-						value = this.regexDefaultValue;
-					} else {
-						log.debug(
-								"The record has been returned unchanged because the regex.pattern does not match and there is no regex.defaulValue specified.");
-						return record;
-					}
+				if (ctxValueMap == null || ctxValueMap.isEmpty()) {
+					log.debug("The record has been returned unchanged. Nested object is not found.");
+					return record;
 				}
-
-				if (this.destKey != null) {
-					expectedKey = this.destKey;
-					valueMap.put(this.destKey, value);
-					if (!this.preserveKeyInBody) {
-						valueMap.remove(this.sourceKey);
-					}
-				} else {
-					valueMap.put(expectedKey, value);
-				}
-
-				if (this.isMetadata) {
-					record.headers().remove(expectedKey);
-					record.headers().add(expectedKey,
-							new SchemaAndValue(Schema.STRING_SCHEMA, valueMap.get(expectedKey)));
-					valueMap.remove(expectedKey);
-				}
-
-				log.debug("The record has been modified.");
-				return newRecord(record);
 			}
 
+			if (ctxValueMap.containsKey(ctxKey)) {
+				Object valueObject = ctxValueMap.get(ctxKey);
+
+				if (!(valueObject instanceof Map)) {
+					String value = String.valueOf(valueObject);
+
+					if (this.regexPattern != null) {
+						if (value.matches(this.regexPattern)) {
+							value = value.replaceAll(this.regexPattern, this.regexFormat);
+						} else if (this.regexDefaultValue != null) {
+							value = this.regexDefaultValue;
+						} else {
+							log.debug(
+									"The record has been returned unchanged because the regex.pattern does not match and there is no regex.defaulValue specified.");
+							return record;
+						}
+					}
+
+					if (this.destKey != null) {
+						rootValueMap.put(this.destKey, value);
+						if (!this.preserveKeyInBody) {
+							ctxValueMap.remove(ctxKey);
+						}
+						ctxKey = this.destKey;
+						ctxValueMap = rootValueMap;
+					} else {
+						ctxValueMap.put(ctxKey, value);
+					}
+
+					if (this.isMetadata) {
+						record.headers().remove(ctxKey);
+						record.headers().add(ctxKey, new SchemaAndValue(Schema.STRING_SCHEMA, ctxValueMap.get(ctxKey)));
+						ctxValueMap.remove(ctxKey);
+					}
+
+					log.debug("The record has been modified.");
+					return newRecord(record);
+				}
+				log.debug("The record has been returned unchanged. Source key field points to the object.");
+				return record;
+			}
+			log.debug("The record has been returned unchanged. Nested source key field is not found.");
+			return record;
+
 		}
-
-		log.debug("The record has been returned unchanged.");
+		log.debug("The record has been returned unchanged since it is empty.");
 		return record;
-	}
-
-	private R newRecord(R record) {
-		return record.newRecord(record.topic(), record.kafkaPartition(), record.keySchema(), record.key(),
-				record.valueSchema(), record.value(), record.timestamp(), record.headers());
 	}
 
 	@Override
@@ -174,5 +193,45 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 	@Override
 	public ConfigDef config() {
 		return CONFIG_DEF;
+	}
+
+	private R newRecord(R record) {
+		return record.newRecord(record.topic(), record.kafkaPartition(), record.keySchema(), record.key(),
+				record.valueSchema(), record.value(), record.timestamp(), record.headers());
+	}
+
+	private boolean isNested(String key) {
+		return key.contains(JSON_KEY_DELIMITER);
+	}
+
+	private String getLastNestedKey(String dottedKey) {
+		String[] splittedKeys = dottedKey.split(JSON_KEY_DELIMITER_REGEX);
+		return splittedKeys[splittedKeys.length - 1];
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> getNestedValueMap(String dottedKey, Map<String, Object> valueMap) {
+		String[] splittedKeys = dottedKey.split(JSON_KEY_DELIMITER_REGEX);
+
+		if (splittedKeys.length == 1) {
+			return valueMap;
+		}
+
+		Map<String, Object> nestedValueMap = valueMap;
+
+		for (int i = 0; i < splittedKeys.length - 1; i++) {
+			Object value = nestedValueMap.get(splittedKeys[i]);
+			if (value == null) {
+				return null;
+			}
+
+			if (value instanceof Map) {
+				nestedValueMap = (Map<String, Object>) value;
+			} else {
+				return null;
+			}
+		}
+
+		return nestedValueMap;
 	}
 }
