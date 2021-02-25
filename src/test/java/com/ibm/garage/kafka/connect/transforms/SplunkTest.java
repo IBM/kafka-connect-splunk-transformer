@@ -85,11 +85,10 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should throw an exception if isPreserveInBody is true but isMetadata is false")
+		@DisplayName("Should throw an exception if isPreserveInBody is true but destKey is not specified")
 		public void configuration_throwsRuntimeException_isPreserveInBody_specified() {
 			Map<String, Object> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, Boolean.FALSE);
 			props.put(Splunk.PRESERVE_CONFIG, Boolean.TRUE);
 
 			this.shouldThrow(props);
@@ -400,18 +399,16 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should preserve a sourceKey and it's original value in the body if preserveKeyInBody is set to true and isMetadata is set to true")
+		@DisplayName("Should preserve a sourceKey and it's original value in the body if preserveKeyInBody is set to true and destKey is specified")
 		public void message_preserveField() {
 			Map<String, Object> props = new HashMap<>();
 			final String OLD_FIELD_NAME = "oldFieldName";
 			final String NEW_FIELD_NAME = "newFieldName";
-			final Boolean IS_METADATA = Boolean.TRUE;
 			final String FIELD_VALUE = "test value";
 			final Boolean PRESERVE = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, OLD_FIELD_NAME);
 			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA);
 			props.put(Splunk.PRESERVE_CONFIG, PRESERVE);
 
 			transformation = new Splunk<>();
@@ -426,10 +423,43 @@ public class SplunkTest {
 			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertTrue(resultMap.containsKey(OLD_FIELD_NAME));
 			assertEquals(FIELD_VALUE, resultMap.get(OLD_FIELD_NAME));
+			assertTrue(resultMap.containsKey(NEW_FIELD_NAME));
+			assertEquals(FIELD_VALUE, resultMap.get(NEW_FIELD_NAME));
+		}
+		
+		@Test
+		@DisplayName("Should preserve a nested sourceKey and it's original value in the body if preserveKeyInBody is set to true and destKey is specified")
+		public void message_preserveField_sourceKeyNested() {
+			Map<String, Object> props = new HashMap<>();
+			final String FIELD_NAME = "field";
+			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
+			final String NEW_FIELD_NAME = "newFieldName";
+			final String FIELD_VALUE = "test value";
+			final Boolean PRESERVE = Boolean.TRUE;
 
-			Iterator<Header> headerIterator = result.headers().allWithName(NEW_FIELD_NAME);
-			assertTrue(headerIterator.hasNext());
-			assertEquals(FIELD_VALUE, headerIterator.next().value());
+			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.PRESERVE_CONFIG, PRESERVE);
+
+			transformation = new Splunk<>();
+			transformation.configure(props);
+
+			Map<String, Object> mapValue = new HashMap<>();
+			Map<String, Object> nestedMapValue = new HashMap<>();
+			nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
+			mapValue.put("nested", nestedMapValue);
+
+			final SinkRecord record = newRecord(mapValue);
+			SinkRecord result = transformation.apply(record);
+
+			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
+			assertTrue(nestedResultMap.containsKey(FIELD_NAME));
+			assertEquals(FIELD_VALUE, nestedResultMap.get(FIELD_NAME));
+			assertTrue(resultMap.containsKey(NEW_FIELD_NAME));
+			assertEquals(FIELD_VALUE, resultMap.get(NEW_FIELD_NAME));
+
 		}
 		
 		@Nested
