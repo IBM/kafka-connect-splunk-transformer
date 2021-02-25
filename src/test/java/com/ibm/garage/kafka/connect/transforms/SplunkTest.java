@@ -232,7 +232,7 @@ public class SplunkTest {
 
 		@Test
 		@DisplayName("Should rename a nested sourceKey to destKey field (not nested!) in a message if the nested sourceKey is present")
-		public void message_returnRenamedField_sourceKeyNested() {
+		public void message_returnRenamedField_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
 			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
@@ -293,7 +293,7 @@ public class SplunkTest {
 		
 		@Test
 		@DisplayName("Should return unchanged message if the nested sourceKey field does not exist")
-		public void message_returnUnchangedMessage_sourceKeyNested() {
+		public void message_returnUnchangedMessage_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
 			final String NESTED_FIELD_NAME = "nested.my." + FIELD_NAME;
@@ -363,7 +363,7 @@ public class SplunkTest {
 		
 		@Test
 		@DisplayName("Should return unchanged message if the nested sourceKey points to the object (i.e. a Map)")
-		public void message_returnUnchangedMessage_sourceKeyNested_pointingToMap() {
+		public void message_returnUnchangedMessage_nestedSourceKey_pointingToMap() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
 			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
@@ -429,7 +429,7 @@ public class SplunkTest {
 		
 		@Test
 		@DisplayName("Should preserve a nested sourceKey and it's original value in the body if preserveKeyInBody is set to true and destKey is specified")
-		public void message_preserveField_sourceKeyNested() {
+		public void message_preserveField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "field";
 			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
@@ -496,7 +496,7 @@ public class SplunkTest {
 			
 			@Test
 			@DisplayName("Should apply regex & format to the value of nested sourceKey field")
-			public void message_returnRegexFormat_sourceKeyNested() {
+			public void message_returnRegexFormat_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
@@ -562,7 +562,7 @@ public class SplunkTest {
 			
 			@Test
 			@DisplayName("Should apply regex & format to the value of nested sourceKey field and put that field among headers")
-			public void message_returnRegexFormatAsMetadata_sourceKeyNested() {
+			public void message_returnRegexFormatAsMetadata_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
@@ -636,7 +636,7 @@ public class SplunkTest {
 			
 			@Test
 			@DisplayName("Should rename and apply regex & format to the value of nested sourceKey field and put that field among headers")
-			public void message_returnRegexFormatAsMetadataAndRename_sourceKeyNested() {
+			public void message_returnRegexFormatAsMetadataAndRename_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
