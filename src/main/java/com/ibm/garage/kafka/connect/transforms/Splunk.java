@@ -114,6 +114,10 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 			throw new RuntimeException("Config: \"" + PRESERVE_CONFIG + "\" is only applicable if \""
 					+ IS_METADATA_KEY_CONFIG + "\" config is set to true");
 		}
+		
+		if (this.sourceKey.equals(this.destKey)) {
+			throw new RuntimeException("Config: \"" + SOURCE_KEY_CONFIG + "\" and \"" + DESTINATION_KEY_CONFIG + "\" cannot point to the same field");
+		}
 
 		log.info(Splunk.class.getName() + " transformation has been successfully configured.");
 	}
