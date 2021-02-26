@@ -5,6 +5,7 @@
 
 package com.ibm.garage.kafka.connect.transforms;
 
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.*;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMapOrNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.Test;
 
 public class SplunkTest {
 
-	private static final String TEST_PURPOSE = "test purpose";
 	private Transformation<SinkRecord> transformation;
 
 	@Nested
@@ -38,7 +38,7 @@ public class SplunkTest {
 		public void configuration_throwsRuntimeException_sourceKey_Null() {
 			Map<String, String> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, null);
-			props.put(Splunk.DEST_KEY_CONFIG, "destKey");
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			this.shouldThrow(props);
 		}
@@ -48,7 +48,7 @@ public class SplunkTest {
 		public void configuration_throwsRuntimeException_sourceKey_Empty() {
 			Map<String, String> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, "");
-			props.put(Splunk.DEST_KEY_CONFIG, "destKey");
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			this.shouldThrow(props);
 		}
@@ -57,7 +57,7 @@ public class SplunkTest {
 		@DisplayName("Should throw an exception if regex pattern is specified but regex format is not")
 		public void configuration_throwsRuntimeException_only_regex_pattern_specified() {
 			Map<String, String> props = new HashMap<>();
-			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 			props.put(Splunk.REGEX_PATTERN_CONFIG, "notnull");
 
 			this.shouldThrow(props);
@@ -67,7 +67,7 @@ public class SplunkTest {
 		@DisplayName("Should throw an exception if regex format is specified but regex pattern is not")
 		public void configuration_throwsRuntimeException_only_regex_format_specified() {
 			Map<String, String> props = new HashMap<>();
-			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 			props.put(Splunk.REGEX_FORMAT_CONFIG, "notnull");
 
 			this.shouldThrow(props);
@@ -77,7 +77,7 @@ public class SplunkTest {
 		@DisplayName("Should throw an exception if regex default value is specified but regex pattern is not")
 		public void configuration_throwsRuntimeException_default_value_and_format_specified() {
 			Map<String, String> props = new HashMap<>();
-			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 			props.put(Splunk.REGEX_FORMAT_CONFIG, "myformat");
 			props.put(Splunk.REGEX_DEFAULT_VALUE_CONFIG, "my default Value");
 
@@ -88,7 +88,7 @@ public class SplunkTest {
 		@DisplayName("Should throw an exception if source.preserve is true but dest.key is not specified")
 		public void configuration_throwsRuntimeException_sourcePreserve_true_destKey_not_specified() {
 			Map<String, Object> props = new HashMap<>();
-			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 			props.put(Splunk.SOURCE_PRESERVE_CONFIG, Boolean.TRUE);
 
 			this.shouldThrow(props);
@@ -98,20 +98,19 @@ public class SplunkTest {
 		@DisplayName("Should throw an exception if the regex.pattern specified is not valid")
 		public void configuration_throwsRuntimeException_regexPattern_badFormat() {
 			Map<String, Object> props = new HashMap<>();
-			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 			props.put(Splunk.DEST_TO_HEADER_CONFIG, Boolean.FALSE);
 			props.put(Splunk.REGEX_PATTERN_CONFIG, "^(.*$");
 
 			this.shouldThrow(props);
 		}
-		
+
 		@Test
 		@DisplayName("Should throw an exception if the source.key and dest.key point to the same field")
 		public void configuration_throwsRuntimeException_sourceKey_destKey_are_the_same() {
 			Map<String, Object> props = new HashMap<>();
-			final String FIELD_NAME = "field";
-			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, FIELD_NAME);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, SOURCE_FIELD_NAME);
 
 			this.shouldThrow(props);
 		}
@@ -135,13 +134,12 @@ public class SplunkTest {
 		public void message_returnOriginalNullMessage() {
 			transformation = new Splunk<>();
 
-			Map<String, Object> mapValue = null;
+			Map<String, Object> valueMap = null;
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			assertNull(resultMap);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertNull(resultValueMap);
 		}
 
 		@Test
@@ -149,462 +147,335 @@ public class SplunkTest {
 		public void message_returnOriginalEmptyMessage() {
 			transformation = new Splunk<>();
 
-			Map<String, Object> mapValue = new HashMap<>();
+			Map<String, Object> valueMap = new HashMap<>();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			assertNotNull(resultMap);
-			assertTrue(resultMap.isEmpty());
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertNotNull(resultValueMap);
+			assertTrue(resultValueMap.isEmpty());
 		}
 
 		@Test
 		@DisplayName("Should return original message if the source.key field is the only configuration specified")
 		public void message_returnOrigMessage() {
 			Map<String, String> props = new HashMap<>();
-			final String FIELD_NAME = "fieldName";
-			final String FIELD_VALUE = "test value";
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> originalMapValue = new HashMap<>();
-			originalMapValue.put(FIELD_NAME, FIELD_VALUE);
+			Map<String, Object> valueMap = createValueMap();
+			Map<String, Object> valueMapCopy = createValueMap();
 
-			Map<String, Object> originalMapValueCopy = new HashMap<>();
-			originalMapValueCopy.put(FIELD_NAME, FIELD_VALUE);
+			SinkRecord result = applyTransformation(transformation, valueMapCopy);
 
-			final SinkRecord originalRecord = newRecord(originalMapValue);
-			SinkRecord resultRecord = transformation.apply(originalRecord);
-
-			Map<String, Object> resultMapValue = requireMapOrNull(resultRecord.value(), TEST_PURPOSE);
-			assertEquals(originalMapValueCopy, resultMapValue);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertEquals(valueMap, resultValueMap);
 		}
-		
+
 		@Test
 		@DisplayName("Should return original message if the nested source.key field is the only configuration specified")
 		public void message_returnOrigMessage_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
-			final String FIELD_NAME = "field";
-			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
-			final String FIELD_VALUE = "test value";
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> originalMapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-			originalMapValue.put("nested", nestedMapValue);
+			Map<String, Object> valueMap = createNestedValueMap();
+			Map<String, Object> valueMapCopy = createNestedValueMap();
 
-			Map<String, Object> originalMapValueCopy = new HashMap<>();
-			Map<String, Object> nestedMapValueCopy = new HashMap<>();
-			nestedMapValueCopy.put(FIELD_NAME, FIELD_VALUE);
-			originalMapValueCopy.put("nested", nestedMapValueCopy);
-			
-			final SinkRecord originalRecord = newRecord(originalMapValue);
-			SinkRecord resultRecord = transformation.apply(originalRecord);
+			SinkRecord result = applyTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultMapValue = requireMapOrNull(resultRecord.value(), TEST_PURPOSE);
-			assertEquals(originalMapValueCopy, resultMapValue);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertEquals(valueMap, resultValueMap);
 		}
 
 		@Test
 		@DisplayName("Should rename a source.key to dest.key field in a message if the source.key is present")
 		public void message_returnRenamedField() {
 			Map<String, String> props = new HashMap<>();
-			final String OLD_FIELD_NAME = "oldFieldName";
-			final String NEW_FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, OLD_FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			mapValue.put(OLD_FIELD_NAME, FIELD_VALUE);
+			Map<String, Object> valueMap = createValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 
-			assertTrue(resultMap.containsKey(NEW_FIELD_NAME));
-			assertFalse(resultMap.containsKey(OLD_FIELD_NAME));
-			assertEquals(FIELD_VALUE, resultMap.get(NEW_FIELD_NAME));
+			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
+			assertFalse(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+			assertEquals(SOURCE_FIELD_VALUE, resultValueMap.get(DEST_FIELD_NAME));
 		}
 
 		@Test
 		@DisplayName("Should rename a nested source.key to dest.key field (not nested!) in a message if the nested source.key is present")
 		public void message_returnRenamedField_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
-			final String FIELD_NAME = "field";
-			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
-			final String NEW_FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-			mapValue.put("nested", nestedMapValue);
+			Map<String, Object> valueMap = createNestedValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> nestedResultValueMap = getNestedValueMap(resultValueMap);
 
-			assertFalse(nestedResultMap.containsKey(FIELD_NAME));
-			assertTrue(resultMap.containsKey(NEW_FIELD_NAME));
-			assertEquals(FIELD_VALUE, resultMap.get(NEW_FIELD_NAME));
+			assertFalse(nestedResultValueMap.containsKey(SOURCE_FIELD_NAME));
+			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
+			assertEquals(SOURCE_FIELD_VALUE, resultValueMap.get(DEST_FIELD_NAME));
 		}
 
 		@Test
 		@DisplayName("Should return unchanged message if the source.key field does not exist")
 		public void message_returnUnchangedMessage() {
-			Map<String, String> props = new HashMap<>();
-			final String SOURCE_FIELD_NAME = "sourceField";
-			final String SOURCE_FIELD_VALUE = "test value";
-			final String DEST_FIELD_NAME = "destField";
 			final String THIS_FIELD_EXIST = "thisOneExists";
 
+			Map<String, String> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			mapValue.put(THIS_FIELD_EXIST, SOURCE_FIELD_VALUE);
+			Map<String, Object> valueMap = createValueMap(THIS_FIELD_EXIST, SOURCE_FIELD_VALUE);
+			Map<String, Object> valueMapCopy = createValueMap(THIS_FIELD_EXIST, SOURCE_FIELD_VALUE);
 
-			
-			Map<String, Object> mapValueCopy = new HashMap<>();
-			mapValueCopy.put(THIS_FIELD_EXIST, SOURCE_FIELD_VALUE);
+			SinkRecord result = applyTransformation(transformation, valueMapCopy);
 
-			final SinkRecord originalRecord = newRecord(mapValueCopy);
-			SinkRecord resultRecord = transformation.apply(originalRecord);
-
-			Map<String, Object> resultMapValue = requireMapOrNull(resultRecord.value(), TEST_PURPOSE);
-			assertEquals(mapValue, resultMapValue);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertEquals(valueMap, resultValueMap);
 		}
-		
+
 		@Test
 		@DisplayName("Should return unchanged message if the nested source.key field does not exist")
 		public void message_returnUnchangedMessage_nestedSourceKey() {
-			Map<String, String> props = new HashMap<>();
-			final String FIELD_NAME = "field";
-			final String NESTED_FIELD_NAME = "nested.my." + FIELD_NAME;
-			final String FIELD_VALUE = "test value";
-			final String DEST_FIELD_NAME = "destField";
+			final String EXPECTED_NESTED_FIELD_NAME = "nested.my." + SOURCE_FIELD_NAME;
 
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+			Map<String, String> props = new HashMap<>();
+			props.put(Splunk.SOURCE_KEY_CONFIG, EXPECTED_NESTED_FIELD_NAME);
 			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			// this exists: "nested.field.here";
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue2lvl = new HashMap<>();
-			nestedMapValue2lvl.put("here", FIELD_VALUE);
-			nestedMapValue.put(FIELD_NAME, nestedMapValue2lvl);
-			mapValue.put("nested", nestedMapValue);
+			// this exists: "my.nested.field"
+			Map<String, Object> valueMap = createValueMap("my", createNestedValueMap());
+			Map<String, Object> valueMapCopy = createValueMap("my", createNestedValueMap());
 
-			Map<String, Object> mapValueCopy = new HashMap<>();
-			Map<String, Object> nestedMapValueCopy = new HashMap<>();
-			Map<String, Object> nestedMapValueCopy2lvl = new HashMap<>();
-			nestedMapValueCopy2lvl.put("here", FIELD_VALUE);
-			nestedMapValueCopy.put(FIELD_NAME, nestedMapValueCopy2lvl);
-			mapValueCopy.put("nested", nestedMapValueCopy);
+			SinkRecord result = applyTransformation(transformation, valueMapCopy);
 
-			final SinkRecord originalRecord = newRecord(mapValueCopy);
-			SinkRecord resultRecord = transformation.apply(originalRecord);
-
-			Map<String, Object> resultMapValue = requireMapOrNull(resultRecord.value(), TEST_PURPOSE);
-			assertEquals(mapValue, resultMapValue);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertEquals(valueMap, resultValueMap);
 		}
 
 		@Test
 		@DisplayName("Should return unchanged message if the source.key points to the object (i.e. a Map)")
 		public void message_returnUnchangedMessage_pointingToMap() {
 			Map<String, String> props = new HashMap<>();
-			final String SOURCE_FIELD_NAME = "sourceField";
-			final String SOURCE_FIELD_VALUE = "test value";
-			final String DEST_FIELD_NAME = "destField";
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_PARENT_OBJECT);
 			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			// this exists: "sourceField.here";
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			nestedMapValue.put("here", SOURCE_FIELD_VALUE);
-			mapValue.put("sourceField", nestedMapValue);
+			// this exists: "nested.field"
+			Map<String, Object> valueMap = createNestedValueMap();
+			Map<String, Object> valueMapCopy = createNestedValueMap();
 
-			Map<String, Object> mapValueCopy = new HashMap<>();
-			Map<String, Object> nestedMapValueCopy = new HashMap<>();
-			nestedMapValueCopy.put("here", SOURCE_FIELD_VALUE);
-			mapValueCopy.put("sourceField", nestedMapValueCopy);
+			SinkRecord result = applyTransformation(transformation, valueMapCopy);
 
-			final SinkRecord originalRecord = newRecord(mapValueCopy);
-			SinkRecord resultRecord = transformation.apply(originalRecord);
-
-			Map<String, Object> resultMapValue = requireMapOrNull(resultRecord.value(), TEST_PURPOSE);
-			assertEquals(mapValue, resultMapValue);
-			assertFalse(resultMapValue.containsKey(DEST_FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertEquals(valueMap, resultValueMap);
 		}
-		
+
 		@Test
 		@DisplayName("Should return unchanged message if the nested source.key points to the object (i.e. a Map)")
 		public void message_returnUnchangedMessage_nestedSourceKey_pointingToMap() {
-			Map<String, String> props = new HashMap<>();
-			final String FIELD_NAME = "field";
-			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
-			final String FIELD_VALUE = "test value";
-			final String DEST_FIELD_NAME = "destField";
+			final String EXPECTED_NESTED_FIELD_NAME = "my." + SOURCE_FIELD_PARENT_OBJECT;
 
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+			Map<String, String> props = new HashMap<>();
+			props.put(Splunk.SOURCE_KEY_CONFIG, EXPECTED_NESTED_FIELD_NAME);
 			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			// this exists: "nested.field.here";
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue2lvl = new HashMap<>();
-			nestedMapValue2lvl.put("here", FIELD_VALUE);
-			nestedMapValue.put(FIELD_NAME, nestedMapValue2lvl);
-			mapValue.put("nested", nestedMapValue);
+			// this exists: "my.nested.field"
+			Map<String, Object> valueMap = createValueMap("my", createNestedValueMap());
+			Map<String, Object> valueMapCopy = createValueMap("my", createNestedValueMap());
 
-			Map<String, Object> mapValueCopy = new HashMap<>();
-			Map<String, Object> nestedMapValueCopy = new HashMap<>();
-			Map<String, Object> nestedMapValueCopy2lvl = new HashMap<>();
-			nestedMapValueCopy2lvl.put("here", FIELD_VALUE);
-			nestedMapValueCopy.put(FIELD_NAME, nestedMapValueCopy2lvl);
-			mapValueCopy.put("nested", nestedMapValueCopy);
+			SinkRecord result = applyTransformation(transformation, valueMapCopy);
 
-			final SinkRecord originalRecord = newRecord(mapValueCopy);
-			SinkRecord resultRecord = transformation.apply(originalRecord);
-
-			Map<String, Object> resultMapValue = requireMapOrNull(resultRecord.value(), TEST_PURPOSE);
-			assertEquals(mapValue, resultMapValue);
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertEquals(valueMap, resultValueMap);
 		}
 
 		@Test
 		@DisplayName("Should preserve a source.key and it's original value in the body if source.preserve is set to true and dest.key is specified")
 		public void message_preserveField() {
 			Map<String, Object> props = new HashMap<>();
-			final String OLD_FIELD_NAME = "oldFieldName";
-			final String NEW_FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-			final Boolean PRESERVE = Boolean.TRUE;
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, OLD_FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.SOURCE_PRESERVE_CONFIG, PRESERVE);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.SOURCE_PRESERVE_CONFIG, SOURCE_PRESERVE_TRUE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			mapValue.put(OLD_FIELD_NAME, FIELD_VALUE);
+			Map<String, Object> valueMap = createValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			assertTrue(resultMap.containsKey(OLD_FIELD_NAME));
-			assertEquals(FIELD_VALUE, resultMap.get(OLD_FIELD_NAME));
-			assertTrue(resultMap.containsKey(NEW_FIELD_NAME));
-			assertEquals(FIELD_VALUE, resultMap.get(NEW_FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+			assertEquals(SOURCE_FIELD_VALUE, resultValueMap.get(SOURCE_FIELD_NAME));
+			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
+			assertEquals(SOURCE_FIELD_VALUE, resultValueMap.get(DEST_FIELD_NAME));
 		}
-		
+
 		@Test
 		@DisplayName("Should preserve a nested source.key and it's original value in the body if source.preserve is set to true and dest.key is specified")
 		public void message_preserveField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
-			final String FIELD_NAME = "field";
-			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
-			final String NEW_FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-			final Boolean PRESERVE = Boolean.TRUE;
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.SOURCE_PRESERVE_CONFIG, PRESERVE);
+			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.SOURCE_PRESERVE_CONFIG, SOURCE_PRESERVE_TRUE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-			mapValue.put("nested", nestedMapValue);
+			Map<String, Object> valueMap = createNestedValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-			assertTrue(nestedResultMap.containsKey(FIELD_NAME));
-			assertEquals(FIELD_VALUE, nestedResultMap.get(FIELD_NAME));
-			assertTrue(resultMap.containsKey(NEW_FIELD_NAME));
-			assertEquals(FIELD_VALUE, resultMap.get(NEW_FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+			assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+			assertEquals(SOURCE_FIELD_VALUE, nestedResultMap.get(SOURCE_FIELD_NAME));
+			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
+			assertEquals(SOURCE_FIELD_VALUE, resultValueMap.get(DEST_FIELD_NAME));
 
 		}
-		
+
 		@Nested
 		@DisplayName("SplunkTest - Regex & Format")
 		class RegexFormat {
-			
+
 			@Test
 			@DisplayName("Should apply regex & format to the value of source.key field")
 			public void message_returnRegexFormat() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				mapValue.put(FIELD_NAME, FIELD_VALUE);
+				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				assertTrue(resultMap.containsKey(FIELD_NAME));
-				assertEquals(EXPECTED_RESULT, String.valueOf(resultMap.get(FIELD_NAME)));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(EXPECTED_RESULT, String.valueOf(resultValueMap.get(SOURCE_FIELD_NAME)));
 			}
-			
+
 			@Test
 			@DisplayName("Should apply regex & format to the value of nested source.key field")
 			public void message_returnRegexFormat_nestedSourceKey() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
-				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				Map<String, Object> nestedMapValue = new HashMap<>();
-				nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-				mapValue.put("nested", nestedMapValue);
+				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				@SuppressWarnings("unchecked")
-				Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-				assertTrue(nestedResultMap.containsKey(FIELD_NAME));
-				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(FIELD_NAME)));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(SOURCE_FIELD_NAME)));
 			}
 
 			@Test
 			@DisplayName("Should apply regex & format to the value of source.key field and put that field among headers")
 			public void message_returnRegexFormat_toHeader() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				mapValue.put(FIELD_NAME, FIELD_VALUE);
+				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				assertFalse(resultMap.containsKey(FIELD_NAME));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				assertFalse(resultValueMap.containsKey(SOURCE_FIELD_NAME));
 
-				Iterator<Header> headerIterator = result.headers().allWithName(FIELD_NAME);
+				Iterator<Header> headerIterator = result.headers().allWithName(SOURCE_FIELD_NAME);
 				assertTrue(headerIterator.hasNext());
 				assertEquals(EXPECTED_RESULT, headerIterator.next().value());
 			}
-			
+
 			@Test
 			@DisplayName("Should apply regex & format to the value of nested source.key field and put that field among headers")
 			public void message_returnRegexFormat_toHeader_nestedSourceKey() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
-				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				Map<String, Object> nestedMapValue = new HashMap<>();
-				nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-				mapValue.put("nested", nestedMapValue);
-				
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				@SuppressWarnings("unchecked")
-				Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-				assertFalse(nestedResultMap.containsKey(FIELD_NAME));
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Iterator<Header> headerIterator = result.headers().allWithName(FIELD_NAME);
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+				assertFalse(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+
+				Iterator<Header> headerIterator = result.headers().allWithName(SOURCE_FIELD_NAME);
 				assertTrue(headerIterator.hasNext());
 				assertEquals(EXPECTED_RESULT, headerIterator.next().value());
 			}
@@ -612,77 +483,63 @@ public class SplunkTest {
 			@Test
 			@DisplayName("Should rename and apply regex & format to the value of source.key field and put that field among headers")
 			public void message_returnRegexFormatAs_toHeader_Rename() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
-				final String NEW_FIELD_NAME = "newFieldName";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
-				props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
+				props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				mapValue.put(FIELD_NAME, FIELD_VALUE);
+				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				assertFalse(resultMap.containsKey(FIELD_NAME));
-				assertFalse(resultMap.containsKey(NEW_FIELD_NAME));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				assertFalse(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+				assertFalse(resultValueMap.containsKey(DEST_FIELD_NAME));
 
-				Iterator<Header> headerIterator = result.headers().allWithName(NEW_FIELD_NAME);
+				Iterator<Header> headerIterator = result.headers().allWithName(DEST_FIELD_NAME);
 				assertTrue(headerIterator.hasNext());
 				assertEquals(EXPECTED_RESULT, headerIterator.next().value());
 			}
-			
+
 			@Test
 			@DisplayName("Should rename and apply regex & format to the value of nested source.key field and put that field among headers")
 			public void message_returnRegexFormat_toHeader_Rename_nestedSourceKey() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
-				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
-				final String NEW_FIELD_NAME = "newFieldName";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
-				props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
+				props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				Map<String, Object> nestedMapValue = new HashMap<>();
-				nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-				mapValue.put("nested", nestedMapValue);
+				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				@SuppressWarnings("unchecked")
-				Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-				assertFalse(nestedResultMap.containsKey(FIELD_NAME));
-				assertFalse(nestedResultMap.containsKey(NEW_FIELD_NAME));
-				assertFalse(resultMap.containsKey(NEW_FIELD_NAME));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+				assertFalse(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+				assertFalse(nestedResultMap.containsKey(DEST_FIELD_NAME));
+				assertFalse(resultValueMap.containsKey(DEST_FIELD_NAME));
 
-				Iterator<Header> headerIterator = result.headers().allWithName(NEW_FIELD_NAME);
+				Iterator<Header> headerIterator = result.headers().allWithName(DEST_FIELD_NAME);
 				assertTrue(headerIterator.hasNext());
 				assertEquals(EXPECTED_RESULT, headerIterator.next().value());
 			}
@@ -690,76 +547,65 @@ public class SplunkTest {
 			@Test
 			@DisplayName("Should return original value if regex does not match and no default value is specified")
 			public void message_returnOriginalNoRegexFormat() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 				final String EXPECTED_RESULT = FIELD_VALUE;
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				mapValue.put(FIELD_NAME, FIELD_VALUE);
+				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				assertTrue(resultMap.containsKey(FIELD_NAME));
-				assertEquals(EXPECTED_RESULT, String.valueOf(resultMap.get(FIELD_NAME)));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(EXPECTED_RESULT, String.valueOf(resultValueMap.get(SOURCE_FIELD_NAME)));
 			}
 
 			@Test
 			@DisplayName("Should return original value if regex does not match and no default value is specified (nested source.key)")
 			public void message_returnOriginalNoRegexFormat_nestedSourceKey() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
-				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 				final String EXPECTED_RESULT = FIELD_VALUE;
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				Map<String, Object> nestedMapValue = new HashMap<>();
-				nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-				mapValue.put("nested", nestedMapValue);
+				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				@SuppressWarnings("unchecked")
-				Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-				assertTrue(nestedResultMap.containsKey(FIELD_NAME));
-				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(FIELD_NAME)));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(SOURCE_FIELD_NAME)));
 			}
-			
+
 			@Test
 			@DisplayName("Should return default value if regex does not match and a default value is specified")
 			public void message_returnDefaultValueNoPatternMatch() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "/var/log/kublet.log";
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 				final String DEFAULT_VALUE = "my default value";
 				final String EXPECTED_RESULT = DEFAULT_VALUE;
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
 				props.put(Splunk.REGEX_DEFAULT_VALUE_CONFIG, DEFAULT_VALUE);
@@ -767,30 +613,26 @@ public class SplunkTest {
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				mapValue.put(FIELD_NAME, FIELD_VALUE);
+				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				assertTrue(resultMap.containsKey(FIELD_NAME));
-				assertEquals(EXPECTED_RESULT, String.valueOf(resultMap.get(FIELD_NAME)));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(EXPECTED_RESULT, String.valueOf(resultValueMap.get(SOURCE_FIELD_NAME)));
 			}
-			
+
 			@Test
 			@DisplayName("Should return default value if regex does not match and a default value is specified (nested source.key)")
 			public void message_returnDefaultValueNoPatternMatch_nestedSourceKey() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
-				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "/var/log/kublet.log";
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 				final String DEFAULT_VALUE = "my default value";
 				final String EXPECTED_RESULT = DEFAULT_VALUE;
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
 				props.put(Splunk.REGEX_DEFAULT_VALUE_CONFIG, DEFAULT_VALUE);
@@ -798,87 +640,70 @@ public class SplunkTest {
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				Map<String, Object> nestedMapValue = new HashMap<>();
-				nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-				mapValue.put("nested", nestedMapValue);
+				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				@SuppressWarnings("unchecked")
-				Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-				assertTrue(nestedResultMap.containsKey(FIELD_NAME));
-				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(FIELD_NAME)));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(SOURCE_FIELD_NAME)));
 			}
 
 			@Test
 			@DisplayName("Should return original record unchanged if regex does not match and a default value is not specified")
 			public void message_returnOrigRecordNoPatternMatch() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "/var/log/kublet.log";
-				final Boolean TO_HEADER = true;
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				mapValue.put(FIELD_NAME, FIELD_VALUE);
+				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				assertTrue(resultMap.containsKey(FIELD_NAME));
-				assertEquals(FIELD_VALUE, resultMap.get(FIELD_NAME));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(FIELD_VALUE, resultValueMap.get(SOURCE_FIELD_NAME));
 
-				Iterator<Header> headerIterator = result.headers().allWithName(FIELD_NAME);
+				Iterator<Header> headerIterator = result.headers().allWithName(SOURCE_FIELD_NAME);
 				assertFalse(headerIterator.hasNext());
 			}
-			
+
 			@Test
-			@DisplayName("Should return original record unchanged if regex does not match and a default value is not specified (nested source key)")
+			@DisplayName("Should return original record unchanged if regex does not match and a default value is not specified (nested source.key)")
 			public void message_returnOrigRecordNoPatternMatch_nestedSourceKey() {
-				Map<String, Object> props = new HashMap<>();
-				final String FIELD_NAME = "aplyRegexAndFormat";
-				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "/var/log/kublet.log";
-				final Boolean TO_HEADER = true;
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 
-				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
+				Map<String, Object> props = new HashMap<>();
+				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
 
-				Map<String, Object> mapValue = new HashMap<>();
-				Map<String, Object> nestedMapValue = new HashMap<>();
-				nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-				mapValue.put("nested", nestedMapValue);
+				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				final SinkRecord record = newRecord(mapValue);
-				SinkRecord result = transformation.apply(record);
+				SinkRecord result = applyTransformation(transformation, valueMap);
 
-				Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-				@SuppressWarnings("unchecked")
-				Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-				assertTrue(nestedResultMap.containsKey(FIELD_NAME));
-				assertEquals(FIELD_VALUE, nestedResultMap.get(FIELD_NAME));
+				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
+				assertEquals(FIELD_VALUE, nestedResultMap.get(SOURCE_FIELD_NAME));
 
-				Iterator<Header> headerIterator = result.headers().allWithName(FIELD_NAME);
+				Iterator<Header> headerIterator = result.headers().allWithName(SOURCE_FIELD_NAME);
 				assertFalse(headerIterator.hasNext());
 			}
 		}
@@ -887,135 +712,97 @@ public class SplunkTest {
 	@Nested
 	@DisplayName("SplunkTest - toHeader")
 	class ToHeader {
-		
+
 		@Test
 		@DisplayName("Should move source.key field from body to header if there is no dest.key, but dest.toHeader is true")
 		public void message_returnHeaderField() {
 			Map<String, Object> props = new HashMap<>();
-			final String FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-			final Boolean TO_HEADER = Boolean.TRUE;
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
-			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			mapValue.put(FIELD_NAME, FIELD_VALUE);
+			Map<String, Object> valueMap = createValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			assertFalse(resultMap.containsKey(FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertFalse(resultValueMap.containsKey(SOURCE_FIELD_NAME));
 
-			Iterator<Header> headerIterator = result.headers().allWithName(FIELD_NAME);
+			Iterator<Header> headerIterator = result.headers().allWithName(SOURCE_FIELD_NAME);
 			assertTrue(headerIterator.hasNext());
-			assertEquals(FIELD_VALUE, headerIterator.next().value());
+			assertEquals(SOURCE_FIELD_VALUE, headerIterator.next().value());
 		}
-		
+
 		@Test
 		@DisplayName("Should move nested source.key field from body to header if there is no dest.key, but dest.toHeader is true")
 		public void message_returnHeaderField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
-			final String FIELD_NAME = "fieldName";
-			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
-			final String FIELD_VALUE = "test value";
-			final Boolean TO_HEADER = Boolean.TRUE;
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-			mapValue.put("nested", nestedMapValue);
+			Map<String, Object> valueMap = createNestedValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-			assertFalse(nestedResultMap.containsKey(FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+			assertFalse(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 
-			Iterator<Header> headerIterator = result.headers().allWithName(FIELD_NAME);
+			Iterator<Header> headerIterator = result.headers().allWithName(SOURCE_FIELD_NAME);
 			assertTrue(headerIterator.hasNext());
-			assertEquals(FIELD_VALUE, headerIterator.next().value());
+			assertEquals(SOURCE_FIELD_VALUE, headerIterator.next().value());
 		}
 
 		@Test
 		@DisplayName("Should move and rename source.key field from body to header, if dest.key is present and dest.toHeader is true")
 		public void message_returnRenamedHeaderField() {
 			Map<String, Object> props = new HashMap<>();
-			final String FIELD_NAME = "oldFiledName";
-			final String NEW_FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-			final Boolean TO_HEADER = Boolean.TRUE;
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			mapValue.put(FIELD_NAME, FIELD_VALUE);
+			Map<String, Object> valueMap = createValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			assertFalse(resultMap.containsKey(FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			assertFalse(resultValueMap.containsKey(SOURCE_FIELD_NAME));
 
-			Iterator<Header> headerIterator = result.headers().allWithName(NEW_FIELD_NAME);
+			Iterator<Header> headerIterator = result.headers().allWithName(DEST_FIELD_NAME);
 			assertTrue(headerIterator.hasNext());
-			assertEquals(FIELD_VALUE, headerIterator.next().value());
+			assertEquals(SOURCE_FIELD_VALUE, headerIterator.next().value());
 		}
-		
+
 		@Test
 		@DisplayName("Should move and rename nested source.key field from body to header, if dest.key is present and dest.toHeader is true")
 		public void message_returnRenamedHeaderField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
-			final String FIELD_NAME = "fieldName";
-			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
-			final String NEW_FIELD_NAME = "newFieldName";
-			final String FIELD_VALUE = "test value";
-			final Boolean TO_HEADER = Boolean.TRUE;
-
-			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_SOURCE_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, DEST_TO_HEADER_TRUE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
 
-			Map<String, Object> mapValue = new HashMap<>();
-			Map<String, Object> nestedMapValue = new HashMap<>();
-			nestedMapValue.put(FIELD_NAME, FIELD_VALUE);
-			mapValue.put("nested", nestedMapValue);
+			Map<String, Object> valueMap = createNestedValueMap();
 
-			final SinkRecord record = newRecord(mapValue);
-			SinkRecord result = transformation.apply(record);
+			SinkRecord result = applyTransformation(transformation, valueMap);
 
-			Map<String, Object> resultMap = requireMapOrNull(result.value(), TEST_PURPOSE);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> nestedResultMap = (Map<String, Object>) resultMap.get("nested");
-			assertFalse(nestedResultMap.containsKey(FIELD_NAME));
+			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+			assertFalse(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 
-			Iterator<Header> headerIterator = result.headers().allWithName(NEW_FIELD_NAME);
+			Iterator<Header> headerIterator = result.headers().allWithName(DEST_FIELD_NAME);
 			assertTrue(headerIterator.hasNext());
-			assertEquals(FIELD_VALUE, headerIterator.next().value());
+			assertEquals(SOURCE_FIELD_VALUE, headerIterator.next().value());
 		}
-	}
-
-	private SinkRecord newRecord(Map<String, Object> value) {
-		return new SinkRecord("topic", 1, null, null, null, value, 1L);
 	}
 }
