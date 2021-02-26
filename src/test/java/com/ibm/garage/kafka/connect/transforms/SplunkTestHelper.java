@@ -5,6 +5,8 @@
 
 package com.ibm.garage.kafka.connect.transforms;
 
+import static org.apache.kafka.connect.transforms.util.Requirements.requireMapOrNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,7 +19,7 @@ public class SplunkTestHelper {
 
 	public static final Boolean DEST_TO_HEADER_TRUE = Boolean.TRUE;
 	public static final Boolean SOURCE_PRESERVE_TRUE = Boolean.TRUE;
-	
+
 	public static final String SOURCE_FIELD_NAME = "sourceField";
 	public static final String SOURCE_FIELD_VALUE = "sourceField value";
 
@@ -33,6 +35,12 @@ public class SplunkTestHelper {
 	public static SinkRecord applyTransformation(Transformation<SinkRecord> transformation,
 			Map<String, Object> valueMap) {
 		return transformation.apply(newRecord(valueMap));
+	}
+
+	public static Map<String, Object> processTransformation(Transformation<SinkRecord> transformation,
+			Map<String, Object> valueMap) {
+		SinkRecord result = applyTransformation(transformation, valueMap);
+		return requireMapOrNull(result.value(), TEST_PURPOSE);
 	}
 
 	public static Map<String, Object> createValueMap() {
@@ -57,7 +65,7 @@ public class SplunkTestHelper {
 
 		return parentValueMap;
 	}
-	
+
 	public static Map<String, Object> createNestedValueMap(String fieldName, Object fieldValue) {
 		Map<String, Object> parentValueMap = new HashMap<>();
 		Map<String, Object> nestedValueMap = new HashMap<>();

@@ -5,7 +5,19 @@
 
 package com.ibm.garage.kafka.connect.transforms;
 
-import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.*;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.DEST_FIELD_NAME;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.DEST_TO_HEADER_TRUE;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.NESTED_SOURCE_FIELD_NAME;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.SOURCE_FIELD_NAME;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.SOURCE_FIELD_PARENT_OBJECT;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.SOURCE_FIELD_VALUE;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.SOURCE_PRESERVE_TRUE;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.TEST_PURPOSE;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.applyTransformation;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.createNestedValueMap;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.createValueMap;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.getNestedValueMap;
+import static com.ibm.garage.kafka.connect.transforms.SplunkTestHelper.processTransformation;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMapOrNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,9 +148,8 @@ public class SplunkTest {
 
 			Map<String, Object> valueMap = null;
 
-			SinkRecord result = applyTransformation(transformation, valueMap);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertNull(resultValueMap);
 		}
 
@@ -149,9 +160,8 @@ public class SplunkTest {
 
 			Map<String, Object> valueMap = new HashMap<>();
 
-			SinkRecord result = applyTransformation(transformation, valueMap);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertNotNull(resultValueMap);
 			assertTrue(resultValueMap.isEmpty());
 		}
@@ -168,9 +178,8 @@ public class SplunkTest {
 			Map<String, Object> valueMap = createValueMap();
 			Map<String, Object> valueMapCopy = createValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMapCopy);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertEquals(valueMap, resultValueMap);
 		}
 
@@ -186,9 +195,8 @@ public class SplunkTest {
 			Map<String, Object> valueMap = createNestedValueMap();
 			Map<String, Object> valueMapCopy = createNestedValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMapCopy);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertEquals(valueMap, resultValueMap);
 		}
 
@@ -204,9 +212,7 @@ public class SplunkTest {
 
 			Map<String, Object> valueMap = createValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMap);
-
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 
 			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
 			assertFalse(resultValueMap.containsKey(SOURCE_FIELD_NAME));
@@ -225,9 +231,7 @@ public class SplunkTest {
 
 			Map<String, Object> valueMap = createNestedValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMap);
-
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 			Map<String, Object> nestedResultValueMap = getNestedValueMap(resultValueMap);
 
 			assertFalse(nestedResultValueMap.containsKey(SOURCE_FIELD_NAME));
@@ -250,9 +254,8 @@ public class SplunkTest {
 			Map<String, Object> valueMap = createValueMap(THIS_FIELD_EXIST, SOURCE_FIELD_VALUE);
 			Map<String, Object> valueMapCopy = createValueMap(THIS_FIELD_EXIST, SOURCE_FIELD_VALUE);
 
-			SinkRecord result = applyTransformation(transformation, valueMapCopy);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertEquals(valueMap, resultValueMap);
 		}
 
@@ -272,9 +275,8 @@ public class SplunkTest {
 			Map<String, Object> valueMap = createValueMap("my", createNestedValueMap());
 			Map<String, Object> valueMapCopy = createValueMap("my", createNestedValueMap());
 
-			SinkRecord result = applyTransformation(transformation, valueMapCopy);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertEquals(valueMap, resultValueMap);
 		}
 
@@ -292,9 +294,8 @@ public class SplunkTest {
 			Map<String, Object> valueMap = createNestedValueMap();
 			Map<String, Object> valueMapCopy = createNestedValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMapCopy);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertEquals(valueMap, resultValueMap);
 		}
 
@@ -314,9 +315,8 @@ public class SplunkTest {
 			Map<String, Object> valueMap = createValueMap("my", createNestedValueMap());
 			Map<String, Object> valueMapCopy = createValueMap("my", createNestedValueMap());
 
-			SinkRecord result = applyTransformation(transformation, valueMapCopy);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMapCopy);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertEquals(valueMap, resultValueMap);
 		}
 
@@ -333,9 +333,8 @@ public class SplunkTest {
 
 			Map<String, Object> valueMap = createValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMap);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 			assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
 			assertEquals(SOURCE_FIELD_VALUE, resultValueMap.get(SOURCE_FIELD_NAME));
 			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
@@ -355,10 +354,9 @@ public class SplunkTest {
 
 			Map<String, Object> valueMap = createNestedValueMap();
 
-			SinkRecord result = applyTransformation(transformation, valueMap);
-
-			Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+			Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 			Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+
 			assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 			assertEquals(SOURCE_FIELD_VALUE, nestedResultMap.get(SOURCE_FIELD_NAME));
 			assertTrue(resultValueMap.containsKey(DEST_FIELD_NAME));
@@ -413,10 +411,9 @@ public class SplunkTest {
 
 				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				SinkRecord result = applyTransformation(transformation, valueMap);
-
-				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+
 				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(SOURCE_FIELD_NAME)));
 			}
@@ -562,9 +559,8 @@ public class SplunkTest {
 
 				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				SinkRecord result = applyTransformation(transformation, valueMap);
+				Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 
-				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 				assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
 				assertEquals(EXPECTED_RESULT, String.valueOf(resultValueMap.get(SOURCE_FIELD_NAME)));
 			}
@@ -587,10 +583,9 @@ public class SplunkTest {
 
 				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				SinkRecord result = applyTransformation(transformation, valueMap);
-
-				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+
 				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(SOURCE_FIELD_NAME)));
 			}
@@ -615,9 +610,8 @@ public class SplunkTest {
 
 				Map<String, Object> valueMap = createValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				SinkRecord result = applyTransformation(transformation, valueMap);
+				Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 
-				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 				assertTrue(resultValueMap.containsKey(SOURCE_FIELD_NAME));
 				assertEquals(EXPECTED_RESULT, String.valueOf(resultValueMap.get(SOURCE_FIELD_NAME)));
 			}
@@ -642,10 +636,9 @@ public class SplunkTest {
 
 				Map<String, Object> valueMap = createNestedValueMap(SOURCE_FIELD_NAME, FIELD_VALUE);
 
-				SinkRecord result = applyTransformation(transformation, valueMap);
-
-				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
+				Map<String, Object> resultValueMap = processTransformation(transformation, valueMap);
 				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+
 				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 				assertEquals(EXPECTED_RESULT, String.valueOf(nestedResultMap.get(SOURCE_FIELD_NAME)));
 			}
@@ -700,6 +693,7 @@ public class SplunkTest {
 
 				Map<String, Object> resultValueMap = requireMapOrNull(result.value(), TEST_PURPOSE);
 				Map<String, Object> nestedResultMap = getNestedValueMap(resultValueMap);
+
 				assertTrue(nestedResultMap.containsKey(SOURCE_FIELD_NAME));
 				assertEquals(FIELD_VALUE, nestedResultMap.get(SOURCE_FIELD_NAME));
 
