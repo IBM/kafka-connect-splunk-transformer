@@ -110,9 +110,13 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 					+ "\" is configured but the regex format or pattern is missing");
 		}
 
-		if (!this.isMetadata && this.preserveKeyInBody) {
+		if (this.preserveKeyInBody && this.destKey == null) {
 			throw new RuntimeException("Config: \"" + PRESERVE_CONFIG + "\" is only applicable if \""
-					+ IS_METADATA_KEY_CONFIG + "\" config is set to true");
+					+ DESTINATION_KEY_CONFIG + "\" is specified");
+		}
+		
+		if (this.sourceKey.equals(this.destKey)) {
+			throw new RuntimeException("Config: \"" + SOURCE_KEY_CONFIG + "\" and \"" + DESTINATION_KEY_CONFIG + "\" cannot point to the same field");
 		}
 
 		log.info(Splunk.class.getName() + " transformation has been successfully configured.");
