@@ -30,13 +30,13 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 
 	public static final String OVERVIEW_DOC = "Transformation of JSON messages to Splunk format";
 
-	public static final String SOURCE_KEY_CONFIG = "sourceKey";
-	public static final String DESTINATION_KEY_CONFIG = "destKey";
-	public static final String IS_METADATA_KEY_CONFIG = "isMetadata";
+	public static final String SOURCE_KEY_CONFIG = "source.key";
+	public static final String SOURCE_PRESERVE_CONFIG = "source.preserve";
+	public static final String DEST_KEY_CONFIG = "dest.key";
+	public static final String DEST_TO_HEADER_CONFIG = "dest.toHeader";
 	public static final String REGEX_PATTERN_CONFIG = "regex.pattern";
 	public static final String REGEX_FORMAT_CONFIG = "regex.format";
 	public static final String REGEX_DEFAULT_VALUE_CONFIG = "regex.defaultValue";
-	public static final String PRESERVE_CONFIG = "preserveKeyInBody";
 
 	private static ConfigDef.Validator PatternValidator() {
 		return (regexKey, regexValue) -> {
@@ -53,26 +53,26 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 	public static final ConfigDef CONFIG_DEF = new ConfigDef()
 			.define(SOURCE_KEY_CONFIG, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, ConfigDef.Importance.MEDIUM,
 					"Source key")
-			.define(DESTINATION_KEY_CONFIG, ConfigDef.Type.STRING, null, ConfigDef.Importance.MEDIUM, "Destination key")
-			.define(IS_METADATA_KEY_CONFIG, ConfigDef.Type.BOOLEAN, Boolean.FALSE, ConfigDef.Importance.MEDIUM,
-					"Is metadata key")
+			.define(DEST_KEY_CONFIG, ConfigDef.Type.STRING, null, ConfigDef.Importance.MEDIUM, "Destination key")
+			.define(DEST_TO_HEADER_CONFIG, ConfigDef.Type.BOOLEAN, Boolean.FALSE, ConfigDef.Importance.MEDIUM,
+					"To header key")
 			.define(REGEX_PATTERN_CONFIG, ConfigDef.Type.STRING, null, PatternValidator(), ConfigDef.Importance.MEDIUM,
 					"Regex pattern key")
 			.define(REGEX_FORMAT_CONFIG, ConfigDef.Type.STRING, null, ConfigDef.Importance.MEDIUM, "Regex format key")
 			.define(REGEX_DEFAULT_VALUE_CONFIG, ConfigDef.Type.STRING, null, ConfigDef.Importance.MEDIUM,
 					"Regex default value key")
-			.define(PRESERVE_CONFIG, ConfigDef.Type.BOOLEAN, Boolean.FALSE, ConfigDef.Importance.MEDIUM,
-					"Preserve key in the body");
+			.define(SOURCE_PRESERVE_CONFIG, ConfigDef.Type.BOOLEAN, Boolean.FALSE, ConfigDef.Importance.MEDIUM,
+					"Preserve source key");
 
 	private static final String PURPOSE = "field value modification";
 
 	private String sourceKey;
+	private Boolean sourcePreserve;
 	private String destKey;
-	private Boolean isMetadata;
+	private Boolean destToHeader;
 	private String regexPattern;
 	private String regexFormat;
 	private String regexDefaultValue;
-	private Boolean preserveKeyInBody;
 
 	private Boolean isSourceKeyNested;
 
@@ -88,12 +88,12 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 		}
 		this.isSourceKeyNested = isNested(this.sourceKey);
 
-		this.destKey = config.getString(DESTINATION_KEY_CONFIG);
-		this.isMetadata = config.getBoolean(IS_METADATA_KEY_CONFIG);
+		this.destKey = config.getString(DEST_KEY_CONFIG);
+		this.destToHeader = config.getBoolean(DEST_TO_HEADER_CONFIG);
 		this.regexPattern = config.getString(REGEX_PATTERN_CONFIG);
 		this.regexFormat = config.getString(REGEX_FORMAT_CONFIG);
 		this.regexDefaultValue = config.getString(REGEX_DEFAULT_VALUE_CONFIG);
-		this.preserveKeyInBody = config.getBoolean(PRESERVE_CONFIG);
+		this.sourcePreserve = config.getBoolean(SOURCE_PRESERVE_CONFIG);
 
 		if (this.regexPattern == null && this.regexFormat != null) {
 			throw new RuntimeException(
@@ -110,13 +110,14 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 					+ "\" is configured but the regex format or pattern is missing");
 		}
 
-		if (this.preserveKeyInBody && this.destKey == null) {
-			throw new RuntimeException("Config: \"" + PRESERVE_CONFIG + "\" is only applicable if \""
-					+ DESTINATION_KEY_CONFIG + "\" is specified");
+		if (this.sourcePreserve && this.destKey == null) {
+			throw new RuntimeException("Config: \"" + SOURCE_PRESERVE_CONFIG + "\" is only applicable if \""
+					+ DEST_KEY_CONFIG + "\" is specified");
 		}
-		
+
 		if (this.sourceKey.equals(this.destKey)) {
-			throw new RuntimeException("Config: \"" + SOURCE_KEY_CONFIG + "\" and \"" + DESTINATION_KEY_CONFIG + "\" cannot point to the same field");
+			throw new RuntimeException("Config: \"" + SOURCE_KEY_CONFIG + "\" and \"" + DEST_KEY_CONFIG
+					+ "\" cannot point to the same field");
 		}
 
 		log.info(Splunk.class.getName() + " transformation has been successfully configured.");
@@ -154,14 +155,14 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 							value = this.regexDefaultValue;
 						} else {
 							log.debug(
-									"The record has been returned unchanged because the regex.pattern does not match and there is no regex.defaulValue specified.");
+									"The record has been returned unchanged because the " + REGEX_PATTERN_CONFIG + " does not match and there is no " + REGEX_DEFAULT_VALUE_CONFIG + " specified.");
 							return record;
 						}
 					}
 
 					if (this.destKey != null) {
 						rootValueMap.put(this.destKey, value);
-						if (!this.preserveKeyInBody) {
+						if (!this.sourcePreserve) {
 							ctxValueMap.remove(ctxKey);
 						}
 						ctxKey = this.destKey;
@@ -170,7 +171,7 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 						ctxValueMap.put(ctxKey, value);
 					}
 
-					if (this.isMetadata) {
+					if (this.destToHeader) {
 						record.headers().remove(ctxKey);
 						record.headers().add(ctxKey, new SchemaAndValue(Schema.STRING_SCHEMA, ctxValueMap.get(ctxKey)));
 						ctxValueMap.remove(ctxKey);

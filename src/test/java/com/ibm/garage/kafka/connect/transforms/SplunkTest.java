@@ -34,21 +34,21 @@ public class SplunkTest {
 	class Configuration {
 
 		@Test
-		@DisplayName("Should throw an exception if sourceKey configuration is null")
+		@DisplayName("Should throw an exception if source.key configuration is null")
 		public void configuration_throwsRuntimeException_sourceKey_Null() {
 			Map<String, String> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, null);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, "destKey");
+			props.put(Splunk.DEST_KEY_CONFIG, "destKey");
 
 			this.shouldThrow(props);
 		}
 
 		@Test
-		@DisplayName("Should throw an exception if sourceKey configuration is empty")
+		@DisplayName("Should throw an exception if source.key configuration is empty")
 		public void configuration_throwsRuntimeException_sourceKey_Empty() {
 			Map<String, String> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, "");
-			props.put(Splunk.DESTINATION_KEY_CONFIG, "destKey");
+			props.put(Splunk.DEST_KEY_CONFIG, "destKey");
 
 			this.shouldThrow(props);
 		}
@@ -85,11 +85,11 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should throw an exception if isPreserveInBody is true but destKey is not specified")
-		public void configuration_throwsRuntimeException_isPreserveInBody_specified() {
+		@DisplayName("Should throw an exception if source.preserve is true but dest.key is not specified")
+		public void configuration_throwsRuntimeException_sourcePreserve_true_destKey_not_specified() {
 			Map<String, Object> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
-			props.put(Splunk.PRESERVE_CONFIG, Boolean.TRUE);
+			props.put(Splunk.SOURCE_PRESERVE_CONFIG, Boolean.TRUE);
 
 			this.shouldThrow(props);
 		}
@@ -99,19 +99,19 @@ public class SplunkTest {
 		public void configuration_throwsRuntimeException_regexPattern_badFormat() {
 			Map<String, Object> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, "sourceKey");
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, Boolean.FALSE);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, Boolean.FALSE);
 			props.put(Splunk.REGEX_PATTERN_CONFIG, "^(.*$");
 
 			this.shouldThrow(props);
 		}
 		
 		@Test
-		@DisplayName("Should throw an exception if the sourceKey and destKey point to the same field")
+		@DisplayName("Should throw an exception if the source.key and dest.key point to the same field")
 		public void configuration_throwsRuntimeException_sourceKey_destKey_are_the_same() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "field";
 			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, FIELD_NAME);
 
 			this.shouldThrow(props);
 		}
@@ -160,7 +160,7 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should return original message if the sourceKey field is the only configuration specified")
+		@DisplayName("Should return original message if the source.key field is the only configuration specified")
 		public void message_returnOrigMessage() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "fieldName";
@@ -185,7 +185,7 @@ public class SplunkTest {
 		}
 		
 		@Test
-		@DisplayName("Should return original message if the nested sourceKey field is the only configuration specified")
+		@DisplayName("Should return original message if the nested source.key field is the only configuration specified")
 		public void message_returnOrigMessage_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
@@ -215,7 +215,7 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should rename a sourceKey to destKey field in a message if the sourceKey is present")
+		@DisplayName("Should rename a source.key to dest.key field in a message if the source.key is present")
 		public void message_returnRenamedField() {
 			Map<String, String> props = new HashMap<>();
 			final String OLD_FIELD_NAME = "oldFieldName";
@@ -223,7 +223,7 @@ public class SplunkTest {
 			final String FIELD_VALUE = "test value";
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, OLD_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -242,7 +242,7 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should rename a nested sourceKey to destKey field (not nested!) in a message if the nested sourceKey is present")
+		@DisplayName("Should rename a nested source.key to dest.key field (not nested!) in a message if the nested source.key is present")
 		public void message_returnRenamedField_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
@@ -251,7 +251,7 @@ public class SplunkTest {
 			final String FIELD_VALUE = "test value";
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -274,7 +274,7 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should return unchanged message if the sourceKey field does not exist")
+		@DisplayName("Should return unchanged message if the source.key field does not exist")
 		public void message_returnUnchangedMessage() {
 			Map<String, String> props = new HashMap<>();
 			final String SOURCE_FIELD_NAME = "sourceField";
@@ -283,7 +283,7 @@ public class SplunkTest {
 			final String THIS_FIELD_EXIST = "thisOneExists";
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -303,7 +303,7 @@ public class SplunkTest {
 		}
 		
 		@Test
-		@DisplayName("Should return unchanged message if the nested sourceKey field does not exist")
+		@DisplayName("Should return unchanged message if the nested source.key field does not exist")
 		public void message_returnUnchangedMessage_nestedSourceKey() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
@@ -312,7 +312,7 @@ public class SplunkTest {
 			final String DEST_FIELD_NAME = "destField";
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -340,7 +340,7 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should return unchanged message if the sourceKey points to the object (i.e. a Map)")
+		@DisplayName("Should return unchanged message if the source.key points to the object (i.e. a Map)")
 		public void message_returnUnchangedMessage_pointingToMap() {
 			Map<String, String> props = new HashMap<>();
 			final String SOURCE_FIELD_NAME = "sourceField";
@@ -348,7 +348,7 @@ public class SplunkTest {
 			final String DEST_FIELD_NAME = "destField";
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -373,7 +373,7 @@ public class SplunkTest {
 		}
 		
 		@Test
-		@DisplayName("Should return unchanged message if the nested sourceKey points to the object (i.e. a Map)")
+		@DisplayName("Should return unchanged message if the nested source.key points to the object (i.e. a Map)")
 		public void message_returnUnchangedMessage_nestedSourceKey_pointingToMap() {
 			Map<String, String> props = new HashMap<>();
 			final String FIELD_NAME = "field";
@@ -382,7 +382,7 @@ public class SplunkTest {
 			final String DEST_FIELD_NAME = "destField";
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, DEST_FIELD_NAME);
+			props.put(Splunk.DEST_KEY_CONFIG, DEST_FIELD_NAME);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -410,7 +410,7 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should preserve a sourceKey and it's original value in the body if preserveKeyInBody is set to true and destKey is specified")
+		@DisplayName("Should preserve a source.key and it's original value in the body if source.preserve is set to true and dest.key is specified")
 		public void message_preserveField() {
 			Map<String, Object> props = new HashMap<>();
 			final String OLD_FIELD_NAME = "oldFieldName";
@@ -419,8 +419,8 @@ public class SplunkTest {
 			final Boolean PRESERVE = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, OLD_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.PRESERVE_CONFIG, PRESERVE);
+			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.SOURCE_PRESERVE_CONFIG, PRESERVE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -439,7 +439,7 @@ public class SplunkTest {
 		}
 		
 		@Test
-		@DisplayName("Should preserve a nested sourceKey and it's original value in the body if preserveKeyInBody is set to true and destKey is specified")
+		@DisplayName("Should preserve a nested source.key and it's original value in the body if source.preserve is set to true and dest.key is specified")
 		public void message_preserveField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "field";
@@ -449,8 +449,8 @@ public class SplunkTest {
 			final Boolean PRESERVE = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.PRESERVE_CONFIG, PRESERVE);
+			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.SOURCE_PRESERVE_CONFIG, PRESERVE);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -478,7 +478,7 @@ public class SplunkTest {
 		class RegexFormat {
 			
 			@Test
-			@DisplayName("Should apply regex & format to the value of sourceKey field")
+			@DisplayName("Should apply regex & format to the value of source.key field")
 			public void message_returnRegexFormat() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
@@ -506,7 +506,7 @@ public class SplunkTest {
 			}
 			
 			@Test
-			@DisplayName("Should apply regex & format to the value of nested sourceKey field")
+			@DisplayName("Should apply regex & format to the value of nested source.key field")
 			public void message_returnRegexFormat_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
@@ -539,20 +539,20 @@ public class SplunkTest {
 			}
 
 			@Test
-			@DisplayName("Should apply regex & format to the value of sourceKey field and put that field among headers")
-			public void message_returnRegexFormatAsMetadata() {
+			@DisplayName("Should apply regex & format to the value of source.key field and put that field among headers")
+			public void message_returnRegexFormat_toHeader() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean iS_METADATA = true;
+				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
 				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.IS_METADATA_KEY_CONFIG, iS_METADATA);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
@@ -572,21 +572,21 @@ public class SplunkTest {
 			}
 			
 			@Test
-			@DisplayName("Should apply regex & format to the value of nested sourceKey field and put that field among headers")
-			public void message_returnRegexFormatAsMetadata_nestedSourceKey() {
+			@DisplayName("Should apply regex & format to the value of nested source.key field and put that field among headers")
+			public void message_returnRegexFormat_toHeader_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean iS_METADATA = true;
+				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
 				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.IS_METADATA_KEY_CONFIG, iS_METADATA);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
@@ -610,22 +610,22 @@ public class SplunkTest {
 			}
 
 			@Test
-			@DisplayName("Should rename and apply regex & format to the value of sourceKey field and put that field among headers")
-			public void message_returnRegexFormatAsMetadataAndRename() {
+			@DisplayName("Should rename and apply regex & format to the value of source.key field and put that field among headers")
+			public void message_returnRegexFormatAs_toHeader_Rename() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "crn:v1:bluemix:public:databases-for-mongodb:us-south:a/123:11111111-2222-3333-4444-555555555555::";
 				final String NEW_FIELD_NAME = "newFieldName";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean iS_METADATA = true;
+				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
 				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.IS_METADATA_KEY_CONFIG, iS_METADATA);
-				props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+				props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
@@ -646,8 +646,8 @@ public class SplunkTest {
 			}
 			
 			@Test
-			@DisplayName("Should rename and apply regex & format to the value of nested sourceKey field and put that field among headers")
-			public void message_returnRegexFormatAsMetadataAndRename_nestedSourceKey() {
+			@DisplayName("Should rename and apply regex & format to the value of nested source.key field and put that field among headers")
+			public void message_returnRegexFormat_toHeader_Rename_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
@@ -655,14 +655,14 @@ public class SplunkTest {
 				final String NEW_FIELD_NAME = "newFieldName";
 				final String REGEX = "crn:(?:[^:]+:){3}([^:]+).*";
 				final String FORMAT = "cloud_$1_logdna";
-				final Boolean iS_METADATA = true;
+				final Boolean TO_HEADER = true;
 				final String EXPECTED_RESULT = "cloud_databases-for-mongodb_logdna";
 
 				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.IS_METADATA_KEY_CONFIG, iS_METADATA);
-				props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
+				props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
@@ -716,7 +716,7 @@ public class SplunkTest {
 			}
 
 			@Test
-			@DisplayName("Should return original value if regex does not match and no default value is specified (nested source key)")
+			@DisplayName("Should return original value if regex does not match and no default value is specified (nested source.key)")
 			public void message_returnOriginalNoRegexFormat_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
@@ -779,7 +779,7 @@ public class SplunkTest {
 			}
 			
 			@Test
-			@DisplayName("Should return default value if regex does not match and a default value is specified (nested source key)")
+			@DisplayName("Should return default value if regex does not match and a default value is specified (nested source.key)")
 			public void message_returnDefaultValueNoPatternMatch_nestedSourceKey() {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
@@ -819,14 +819,14 @@ public class SplunkTest {
 				Map<String, Object> props = new HashMap<>();
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String FIELD_VALUE = "/var/log/kublet.log";
-				final Boolean IS_METADATA = true;
+				final Boolean TO_HEADER = true;
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 
 				props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
@@ -852,14 +852,14 @@ public class SplunkTest {
 				final String FIELD_NAME = "aplyRegexAndFormat";
 				final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 				final String FIELD_VALUE = "/var/log/kublet.log";
-				final Boolean IS_METADATA = true;
+				final Boolean TO_HEADER = true;
 				final String REGEX = "noregex";
 				final String FORMAT = "cloud_$1_logdna";
 
 				props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
 				props.put(Splunk.REGEX_PATTERN_CONFIG, REGEX);
 				props.put(Splunk.REGEX_FORMAT_CONFIG, FORMAT);
-				props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA);
+				props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 				transformation = new Splunk<>();
 				transformation.configure(props);
@@ -885,19 +885,19 @@ public class SplunkTest {
 	}
 
 	@Nested
-	@DisplayName("SplunkTest - Metadata")
-	class Metadata {
+	@DisplayName("SplunkTest - toHeader")
+	class ToHeader {
 		
 		@Test
-		@DisplayName("Should move sourceKey field from body to header if there is no destKey, but isMetadata is true")
+		@DisplayName("Should move source.key field from body to header if there is no dest.key, but dest.toHeader is true")
 		public void message_returnHeaderField() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "newFieldName";
 			final String FIELD_VALUE = "test value";
-			final Boolean IS_METADATA_VALUE = Boolean.TRUE;
+			final Boolean TO_HEADER = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA_VALUE);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -917,16 +917,16 @@ public class SplunkTest {
 		}
 		
 		@Test
-		@DisplayName("Should move nested sourceKey field from body to header if there is no destKey, but isMetadata is true")
+		@DisplayName("Should move nested source.key field from body to header if there is no dest.key, but dest.toHeader is true")
 		public void message_returnHeaderField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "fieldName";
 			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 			final String FIELD_VALUE = "test value";
-			final Boolean IS_METADATA_VALUE = Boolean.TRUE;
+			final Boolean TO_HEADER = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA_VALUE);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -950,17 +950,17 @@ public class SplunkTest {
 		}
 
 		@Test
-		@DisplayName("Should move and rename sourceKey field from body to header, if destKey is present and isMetadata is true")
+		@DisplayName("Should move and rename source.key field from body to header, if dest.key is present and dest.toHeader is true")
 		public void message_returnRenamedHeaderField() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "oldFiledName";
 			final String NEW_FIELD_NAME = "newFieldName";
 			final String FIELD_VALUE = "test value";
-			final Boolean IS_METADATA_VALUE = Boolean.TRUE;
+			final Boolean TO_HEADER = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA_VALUE);
+			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
@@ -980,18 +980,18 @@ public class SplunkTest {
 		}
 		
 		@Test
-		@DisplayName("Should move and rename nested sourceKey field from body to header, if destKey is present and isMetadata is true")
+		@DisplayName("Should move and rename nested source.key field from body to header, if dest.key is present and dest.toHeader is true")
 		public void message_returnRenamedHeaderField_nestedSourceKey() {
 			Map<String, Object> props = new HashMap<>();
 			final String FIELD_NAME = "fieldName";
 			final String NESTED_FIELD_NAME = "nested." + FIELD_NAME;
 			final String NEW_FIELD_NAME = "newFieldName";
 			final String FIELD_VALUE = "test value";
-			final Boolean IS_METADATA_VALUE = Boolean.TRUE;
+			final Boolean TO_HEADER = Boolean.TRUE;
 
 			props.put(Splunk.SOURCE_KEY_CONFIG, NESTED_FIELD_NAME);
-			props.put(Splunk.DESTINATION_KEY_CONFIG, NEW_FIELD_NAME);
-			props.put(Splunk.IS_METADATA_KEY_CONFIG, IS_METADATA_VALUE);
+			props.put(Splunk.DEST_KEY_CONFIG, NEW_FIELD_NAME);
+			props.put(Splunk.DEST_TO_HEADER_CONFIG, TO_HEADER);
 
 			transformation = new Splunk<>();
 			transformation.configure(props);
