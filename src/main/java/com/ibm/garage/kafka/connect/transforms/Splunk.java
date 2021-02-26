@@ -180,10 +180,10 @@ public class Splunk<R extends ConnectRecord<R>> implements Transformation<R> {
 					log.debug("The record has been modified.");
 					return newRecord(record);
 				}
-				log.debug("The record has been returned unchanged. Source key field points to the object.");
+				log.debug("The record has been returned unchanged. " + SOURCE_KEY_CONFIG + " field points to the object.");
 				return record;
 			}
-			log.debug("The record has been returned unchanged. Nested source key field is not found.");
+			log.debug("The record has been returned unchanged. Nested " + SOURCE_KEY_CONFIG + " field is not found.");
 			return record;
 
 		}
