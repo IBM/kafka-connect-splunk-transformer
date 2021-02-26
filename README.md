@@ -10,31 +10,31 @@ The intention of this transformer is to mimic internal Splunk transformations an
 
 | Name                 | Description                                                                                                                                                                                                                                                              | Default Value |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
-| `sourceKey`          | Name of the field on which (either itself or its value) we want to apply some changes. Nested fields are also supported utilizing the dotted form, e.g.: `"config.app.id"`. If the `sourceKey` parameter contains a dot (`.`), it is automatically considered as nested. |               |
-| `destKey`            | If `destKey` is specified, the transformation will rename `sourceKey` field to `destKey`. `destKey` cannot point to the same field as `sourceKey` does.                                                                                                                  |               |
-| `isMetadata`         | Set to `true` if you want to put the final field (`sourceKey` or `destKey` if specified) into Kafka record headers. The final field is then removed from the Kafka record body.                                                                                          | `false`       |
-| `preserveKeyInBody`  | An option for preserving the original `sourceKey` field in the Kafka record body when the `destKey` field is specified. The `sourceKey` field can thus be left unchanged in the Kafka record body.                                                                       | `false`       |
-| `regex.pattern`      | An option to apply a regex to the value of the `sourceKey`. `regex.format` option needs to be specified and capture groups are supported.                                                                                                                                |               |
-| `regex.format`       | An option to apply final formatting on the `sourceKey` value. Capture groups from the regex can be used using dollar syntax e.g. $1.                                                                                                                                     |               |
+| `source.key`         | Name of the field on which (either itself or its value) we want to apply some changes. Nested fields are also supported utilizing the dotted form, e.g. `"config.app.id"`. If the `source.key` parameter contains a dot (`.`), it is automatically considered as nested. |               |
+| `source.preserve`    | An option for preserving the original `source.key` field in the Kafka record body when the `dest.key` field is specified. The `source.key` field can thus be left unchanged in the Kafka record body.                                                                    | `false`       |
+| `dest.key`           | If `dest.key` is specified, the transformation will rename `source.key` field to `dest.key`. `dest.key` cannot point to the same field as `source.key` does.                                                                                                             |               |
+| `dest.toHeader`      | Set to `true` if you want to put the final field (`source.key` or `dest.key` if specified) into Kafka record headers. The final field is then removed from the Kafka record body.                                                                                        | `false`       |
+| `regex.pattern`      | An option to apply a regex to the value of the `source.key`. `regex.format` option needs to be specified and capture groups are supported.                                                                                                                               |               |
+| `regex.format`       | An option to apply final formatting on the `source.key` value. Capture groups from the regex can be used using dollar syntax e.g. `$1`.                                                                                                                                  |               |
 | `regex.defaultValue` | An option to provide a default value for the target field, if the source key does not match the regex pattern. `regex.pattern` and `regex.format` must be specified.                                                                                                     |               |
 
 ### Notes on transformer behaviour
 
-#### Nested sourceKey
+#### Nested source.key
 
-- If the `souceKey` parameter contains a dot (`.`) character, it is automatically considered as nested.
-- If the `souceKey` is the only field nested in the parent object and the `sourceKey` is renamed by using the `destKey` (`preserveKeyInBody` defaults to `false`) then the key is put into the root of the JSON message. The parent object of the `sourceKey` field is left empty, and it is not removed.
+- If the `source.key` parameter contains a dot (`.`) character, it is automatically considered as nested.
+- If the `source.key` is the only field nested in the parent object and the `source.key` is renamed by using the `dest.key` (`source.preserve` defaults to `false`) then the key is put into the root of the JSON message. The parent object of the `source.key` field is left empty, and it is not removed.
   - Example: `{"nested": {"renameMe": "value"}}` => `{"nested": {}, "renamedKey": "value"}`
-- Despite the fact that the `destKey` can contain dots (`.`), it is in NO way considered as the nested field and its key is always processed at once without creating any nested structures.
+- Despite the fact that the `dest.key` can contain dots (`.`), it is in NO way considered as the nested field and its key is always processed at once without creating any nested structures.
   - Example: `{"nested": {"renameMe": "value"}}` => `{"nested": {}, "renamed.key": "value"}`
-- `sourceKey` parameter cannot point to the object. It must be the final element (field). If it points to the object, the Kafka record is returned unchanged.
-  - Example: `{"nested": {"renameMe": "value"}}` and (`sourceKey="nested"`) => unchanged Kafka record
-- `regex.pattern`, `regex.format` and `regex.defaultValue` are applied in place if `destKey` is not specified.
+- `source.key` parameter cannot point to the object. It must be the final element (field). If it points to the object, the Kafka record is returned unchanged.
+  - Example: `{"nested": {"renameMe": "value"}}` and (`source.key="nested"`) => unchanged Kafka record
+- `regex.pattern`, `regex.format` and `regex.defaultValue` are applied in place if `dest.key` is not specified.
   - Example: `{"nested": {"key": "value"}}` => `{"nested": {"key": "applied format or default value"}}`
 
 #### Regex & format
 
-- If `regex.pattern` is specified, but there is no match on the value of the `sourceKey` field, the `regex.defaultValue` is returned if it is specified. Otherwise, the Kafka record is returned unchanged (without any other transformations).
+- If `regex.pattern` is specified, but there is no match on the value of the `source.key` field, the `regex.defaultValue` is returned if it is specified. Otherwise, the Kafka record is returned unchanged (without any other transformations).
 
 ### Flowchart Diagram
 
@@ -67,17 +67,17 @@ Here is an example configuration for the Splunk and Filter transformers as discu
   "transforms": "my_custom_transform_1,my_custom_transform_2,discard_if_no_index_in_header",
 
   "transforms.my_custom_transform_1.type": "com.ibm.garage.kafka.connect.transforms.Splunk",
-  "transforms.my_custom_transform_1.sourceKey": "source_key1",
-  "transforms.my_custom_transform_1.destKey": "splunk.header.index",
-  "transforms.my_custom_transform_1.isMetadata": true,
+  "transforms.my_custom_transform_1.source.key": "source_key1",
+  "transforms.my_custom_transform_1.source.preserve": true,
+  "transforms.my_custom_transform_1.dest.key": "splunk.header.index",
+  "transforms.my_custom_transform_1.dest.toHeader": true,
   "transforms.my_custom_transform_1.regex.pattern": "^(.*)$",
   "transforms.my_custom_transform_1.regex.format": "my_custom_$1_format",
   "transforms.my_custom_transform_1.regex.defaultValue": "my default value",
-  "transforms.my_custom_transform_1.preserveKeyInBody": true,
 
   "transforms.my_custom_transform_2.type": "com.ibm.garage.kafka.connect.transforms.Splunk",
-  "transforms.my_custom_transform_2.sourceKey": "source_key1",
-  "transforms.my_custom_transform_2.destKey": "source_key1_renamed",
+  "transforms.my_custom_transform_2.source.key": "source_key1",
+  "transforms.my_custom_transform_2.dest.key": "source_key1_renamed",
 
   "transforms.discard_if_no_index_in_header.type": "com.ibm.garage.kafka.connect.transforms.Filter",
   "transforms.discard_if_no_index_in_header.headerKey": "splunk.header.index",
@@ -90,12 +90,12 @@ Here is an example configuration for the Splunk and Filter transformers as discu
   - It takes the value of the `source_key1` field if it is found.
   - If the `regex.pattern` matches, it applies the `regex.format`, which results in `my_custom_<value of source_key1 field>_format`.
   - If the `regex.pattern` does not match, the `regex.defaultValue` is used as the value instead.
-  - Since the `destKey` is specified, a new field with `destKey` key is created (which means `splunk.header.index`). The value is taken from the previous points.
-  - `preserveKeyInBody` is set to `true`, so the original `sourceKey` is not removed from the Kafka record. It is left intact and available to the next transformation.
-  - `isMetadata` is set to `true`, so newly created `splunk.header.index` field and its new value are moved to the Kafka record headers. The field is then removed from the Kafka record body.
+  - Since the `dest.key` is specified, a new field with `dest.key` key is created (which means `splunk.header.index`). The value is taken from the previous points.
+  - `source.preserve` is set to `true`, so the original `source.key` is not removed from the Kafka record. It is left intact and available to the next transformation.
+  - `dest.toHeader` is set to `true`, so newly created `splunk.header.index` field and its new value are moved to the Kafka record headers. The field is then removed from the Kafka record body.
 - The second transformation (labeled `my_custom_transform_2`):
   - It creates a new `source_key1_renamed` field, and it takes the value from the original source key `source_key1`.
-  - Since `preserveKeyInBody` defaults to `false`, the original `source_key1` field is removed from the Kafka record.
+  - Since `source.preserve` defaults to `false`, the original `source_key1` field is removed from the Kafka record.
 - The third transformation (labeled `discard_if_no_index_in_header`):
   - If the header with key `splunk.header.index` exists in the Kafka record, the message is not discarded (because the condition is negated by `isNegate` set to `true`). If the header with key `splunk.header.index` does not exist in the Kafka record, the message is discarded.
 
