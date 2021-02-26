@@ -104,6 +104,17 @@ public class SplunkTest {
 
 			this.shouldThrow(props);
 		}
+		
+		@Test
+		@DisplayName("Should throw an exception if the sourceKey and destKey point to the same field")
+		public void configuration_throwsRuntimeException_sourceKey_destKey_are_the_same() {
+			Map<String, Object> props = new HashMap<>();
+			final String FIELD_NAME = "field";
+			props.put(Splunk.SOURCE_KEY_CONFIG, FIELD_NAME);
+			props.put(Splunk.DESTINATION_KEY_CONFIG, FIELD_NAME);
+
+			this.shouldThrow(props);
+		}
 
 		private void shouldThrow(Map<String, ?> props) {
 			transformation = new Splunk<>();
