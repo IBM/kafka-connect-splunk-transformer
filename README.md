@@ -14,9 +14,9 @@ The intention of this transformer is to mimic internal Splunk transformations an
 | `source.preserve`    | An option for preserving the original `source.key` field in the Kafka record body when the `dest.key` field is specified. The `source.key` field can thus be left unchanged in the Kafka record body.                                                                    | `false`       |
 | `dest.key`           | If `dest.key` is specified, the transformation will rename `source.key` field to `dest.key`. `dest.key` cannot point to the same field as `source.key` does.                                                                                                             |               |
 | `dest.toHeader`      | Set to `true` if you want to put the final field (`source.key` or `dest.key` if specified) into Kafka record headers. The final field is then removed from the Kafka record body.                                                                                        | `false`       |
-| `regex.pattern`      | An option to apply a regex to the value of the `source.key`. `regex.format` option needs to be specified and capture groups are supported.                                                                                                                               |               |
+| `regex.pattern`      | An option to apply a regex to the value of the `source.key`. `regex.format` option needs to be specified. Capture groups are supported.                                                                                                                                  |               |
 | `regex.format`       | An option to apply final formatting on the `source.key` value. Capture groups from the regex can be used using dollar syntax e.g. `$1`.                                                                                                                                  |               |
-| `regex.defaultValue` | An option to provide a default value for the target field, if the source key does not match the regex pattern. `regex.pattern` and `regex.format` must be specified.                                                                                                     |               |
+| `regex.defaultValue` | An option to provide a default value for the target field, if the `source.key` value does not match the regex pattern. `regex.pattern` and `regex.format` must be specified.                                                                                             |               |
 
 ### Notes on transformer behaviour
 
@@ -34,6 +34,7 @@ The intention of this transformer is to mimic internal Splunk transformations an
 
 #### Regex & format
 
+- `java.util.regex` package is used to work with regular expressions.
 - If `regex.pattern` is specified, but there is no match on the value of the `source.key` field, the `regex.defaultValue` is returned if it is specified. Otherwise, the Kafka record is returned unchanged (without any other transformations).
 
 ### Flowchart Diagram
