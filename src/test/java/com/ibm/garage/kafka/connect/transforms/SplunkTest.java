@@ -111,7 +111,6 @@ public class SplunkTest {
 		public void configuration_throwsRuntimeException_regexPattern_badFormat() {
 			Map<String, Object> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
-			props.put(Splunk.DEST_TO_HEADER_CONFIG, Boolean.FALSE);
 			props.put(Splunk.REGEX_PATTERN_CONFIG, "^(.*$");
 
 			this.shouldThrow(props);
