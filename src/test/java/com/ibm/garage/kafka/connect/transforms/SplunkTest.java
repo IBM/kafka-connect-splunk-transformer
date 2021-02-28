@@ -101,7 +101,7 @@ public class SplunkTest {
 		public void configuration_throwsRuntimeException_sourcePreserve_true_destKey_not_specified() {
 			Map<String, Object> props = new HashMap<>();
 			props.put(Splunk.SOURCE_KEY_CONFIG, SOURCE_FIELD_NAME);
-			props.put(Splunk.SOURCE_PRESERVE_CONFIG, Boolean.TRUE);
+			props.put(Splunk.SOURCE_PRESERVE_CONFIG, SOURCE_PRESERVE_TRUE);
 
 			this.shouldThrow(props);
 		}
