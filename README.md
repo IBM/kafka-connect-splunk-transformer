@@ -102,6 +102,8 @@ Here is an example configuration for the Splunk and Filter transformers as discu
 
 ## Build
 
+Please, use Gradle version 7.0+:
+
 ```
 gradle jar
 ```
